@@ -1,0 +1,15 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Virtual Environment
+.venv/
+
+#Data Bases
+db/*.db
+
+#Configuration
+config/config.json
+
+#Uploads
+default_uploads/
