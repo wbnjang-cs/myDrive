@@ -17,12 +17,17 @@ def Initialize_Database() -> Path:
     Return value: 
         dbPath : A Path object that points to the db file
     """
+    #Finds the myDrive main folder
     mainDir = Path(__file__).parent.parent
+    #Finds the myDrive/db directory
     dbDir = mainDir / "db"
+    #Finds the path to the db file located at myDrive/db/files.db
     dbPath = dbDir / "files.db"
 
+    #If myDrive/db directory doesn't exist, makes it. If it does exist, continue
     dbDir.mkdir(exist_ok=True)
 
+    #connect to the db file. If db file doesn't exist, make a new db file with a new table
     conn = sqlite3.connect(dbPath)
 
     c = conn.cursor()

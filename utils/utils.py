@@ -86,7 +86,7 @@ def UpdateSavePath(savePath: Path, configPath: Path) ->  None:
     Inputs:
         
         savePath:   A Path object that points to the directory the user wishes to save their
-                    file backups
+                    file backups. It is provided by the user.
         
         configPath:  A Path object that points to the config.json file
 
@@ -98,23 +98,31 @@ def UpdateSavePath(savePath: Path, configPath: Path) ->  None:
 
         2. configPath is incorrect/config.json does not exist
     """
-
+    #If the path the user gave does not exist, raise an error
     if not savePath.exists():
         raise HTTPException(status_code=404, detail="That directory does not exist. Try again please.")
 
+    #If configPath doesn't exist
     if configPath.exists():
         try:
+            #loads data from config gile
             with open(configPath, "r") as configFile:
                 data = json.load(configFile)
             
+            #update the "save path" value in data
             data["save path"] = str(savePath.resolve())
 
+            #overwrite the config file with updated contents
             with open(configPath, "w") as configFile:
                 json.dump(data, configFile, indent=4)
 
+        #If any part of writing to config file fails, raise an error
         except Exception as e:
             print(f"failed to save path: {e}")
             raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    else:
+        print("Config File can't be found. Please restart app.")
+        raise HTTPException(status_code=500, detail="Config File can't be found")
 #End of CheckPathAndUpdate =========================================================================================================
 
 
