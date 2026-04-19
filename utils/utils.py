@@ -1,13 +1,14 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from hashlib import sha256
 from pathlib import Path
+from .db_utils import Add_File
 import tempfile
 import json
 
 
 
 
-def SaveAndHashFile(file: UploadFile, savePath: Path) -> str:
+def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> str:
     """
     Name: SaveAndHashFile
 
@@ -56,9 +57,15 @@ def SaveAndHashFile(file: UploadFile, savePath: Path) -> str:
         
         #will make destinationDir/myFile point to our temp file. temp file is renamed to myFile
         #file.name returns the entire absolute path. Path(fileName) just turns it into a path object
-        Path(tempName).replace(savePath)
 
         fileByteHash = fileHasher.hexdigest()
+
+        if Add_File(dbPath, file.filename, fileByteHash):
+            Path(tempName).replace(savePath)
+        else:
+            if tempName and Path(tempName).exists():
+                Path(tempName).unlink()
+            raise HTTPException(status_code=409, detail="File with duplicate contents is already saved")
 
         return fileByteHash
     
