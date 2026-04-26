@@ -8,7 +8,7 @@ import json
 
 
 
-def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> str:
+def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> bool:
     """
     Name: SaveAndHashFile
 
@@ -26,10 +26,10 @@ def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> str:
 
     Inputs: 
     file: an UploadFile object of the file the user is trying to upload
-    savePath: a Path object that points to the save directory specified in myDrive/config/config.json
+    savePath: a Path object that points to the file inside save directory specified in myDrive/config/config.json
 
     Return value:
-    fileByteHash: A string of the hash of the contents of file, hashed using sha256
+    file.filename: A string of title of the file we are uploading
     """
     
     tempName = None
@@ -62,12 +62,13 @@ def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> str:
 
         if Add_File(dbPath, file.filename, fileByteHash):
             Path(tempName).replace(savePath)
+
         else:
             if tempName and Path(tempName).exists():
                 Path(tempName).unlink()
-            raise HTTPException(status_code=409, detail="File with duplicate contents is already saved")
+            return False
 
-        return fileByteHash
+        return True
     
     except Exception as e:
         if tempName and Path(tempName).exists():
@@ -75,7 +76,7 @@ def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> str:
         
         print(f"Upload failed: error type {e}")
 
-        raise e
+        return False
     
 #End of SaveAndHashFile==============================================================================================
 
