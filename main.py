@@ -26,6 +26,7 @@ def create_upload_file(userFiles: list[UploadFile] = File(...)):
     
         #Quick Check if file with same name exists. If it does, don't save file and return
         if Check_File_Name_Exists(dbPath, fileName):
+            fileName = fileName + "(File with identical name already exists)"
             failedFiles.append(fileName)
             continue
 
@@ -37,9 +38,12 @@ def create_upload_file(userFiles: list[UploadFile] = File(...)):
         if SaveAndHashFile(file, savePath, dbPath):
             uploadedFiles.append(fileName)
         else:
+            fileName = fileName + "(File with identical content already saved)"
             failedFiles.append(fileName)
 
-    return {"Message" : f"The file {uploadedFiles} succesfully uploaded, the files {failedFiles} did not upload"}
+    return {"Message" : "Upload Completed",
+            "Successfull_Uploads" : uploadedFiles,
+            "Failed_Uploads" : failedFiles}
 
 
 @app.post("/config/setPath")

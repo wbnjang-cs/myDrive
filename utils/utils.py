@@ -29,7 +29,9 @@ def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> bool:
     savePath: a Path object that points to the file inside save directory specified in myDrive/config/config.json
 
     Return value:
-    file.filename: A string of title of the file we are uploading
+        True : The file was successfully saved and added to DB
+
+        False : The file failed to save to destination and DB
     """
     
     tempName = None
@@ -60,9 +62,11 @@ def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> bool:
 
         fileByteHash = fileHasher.hexdigest()
 
+        #If file is succesfully added to DB, replace the temp file with real file
         if Add_File(dbPath, file.filename, fileByteHash):
             Path(tempName).replace(savePath)
 
+        #If file failed to upload to DB, delete temp file and return False
         else:
             if tempName and Path(tempName).exists():
                 Path(tempName).unlink()
@@ -70,6 +74,7 @@ def SaveAndHashFile(file: UploadFile, savePath: Path, dbPath: Path) -> bool:
 
         return True
     
+    #If error happens midway through process, delete temp file
     except Exception as e:
         if tempName and Path(tempName).exists():
             Path(tempName).unlink()
