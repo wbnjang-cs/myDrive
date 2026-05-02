@@ -1,5 +1,8 @@
 import json
 from pathlib import Path
+import uuid
+from fastapi import HTTPException
+import json
 
 def InitializeConfig() -> Path:
     """
@@ -47,6 +50,82 @@ def InitializeConfig() -> Path:
     return configPath
 #End of InitializeConfig()=======================================================================================
 
+def UpdateSavePath(savePath: Path, configPath: Path) ->  None:
+    """
+    Name: UpdateSavePath
 
+    Function description: 
+
+        Will recieve a desired save path from user. If that save path exists,
+        the config.json will be updated.
+                
+    Inputs:
+        
+        savePath:   A Path object that points to the directory the user wishes to save their
+                    file backups. It is provided by the user.
+        
+        configPath:  A Path object that points to the config.json file
+
+    Return value: None
+
+    Errors accounted for:
+
+        1. savePath does not exist
+
+        2. configPath is incorrect/config.json does not exist
+    """
+    #If the path the user gave does not exist, raise an error
+    if not savePath.exists():
+        raise HTTPException(status_code=404, detail="That directory does not exist. Try again please.")
+
+    #If configPath doesn't exist
+    if configPath.exists():
+        try:
+            #loads data from config gile
+            with open(configPath, "r") as configFile:
+                data = json.load(configFile)
+            
+            #update the "save path" value in data
+            data["save path"] = str(savePath.resolve())
+
+            #overwrite the config file with updated contents
+            with open(configPath, "w") as configFile:
+                json.dump(data, configFile, indent=4)
+
+        #If any part of writing to config file fails, raise an error
+        except Exception as e:
+            print(f"failed to save path: {e}")
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+    else:
+        print("Config File can't be found. Please restart app.")
+        raise HTTPException(status_code=500, detail="Config File can't be found")
+#End of CheckPathAndUpdate =========================================================================================================
     
 
+    
+def GetSavePath(configPath: Path) -> Path:
+    """
+    Name: GetSavePath
+
+    Function description:
+
+        Will return the save path saved in the config.json folder
+                
+    Assumptions: the inputted configPath parameter correctly points to the config.json file
+
+    Inputs: 
+        configPath: a Path object that points to the config.json file
+
+    Return value: 
+        savePath: A Path that is the save path saved inside the config.json folder
+
+    """
+    with open(configPath, "r") as configFile:
+        data = json.load(configFile)
+    
+    savePath = data["save path"]
+    if savePath == None:
+        raise HTTPException(status_code=400, detail="A save directory has not been set yet. Please choose a save directory before trying again.")
+
+    return Path(savePath)
+#End of GetSavePath ========================================================================================================================

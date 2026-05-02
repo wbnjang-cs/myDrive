@@ -42,6 +42,11 @@ def create_upload_file(userFiles: list[UploadFile] = File(...)):
             failedFiles.append(fileName)
 
     return {"Message" : "Upload Completed",
+            "File Counts" : {
+                "Total" : len(userFiles),
+                "Success" : len(uploadedFiles),
+                "Failed" : len(failedFiles)
+            },
             "Successfull_Uploads" : uploadedFiles,
             "Failed_Uploads" : failedFiles}
 
