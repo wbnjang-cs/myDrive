@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-
+DB_PATH = ""
 
 
 def Initialize_Database() -> Path:
@@ -17,6 +17,8 @@ def Initialize_Database() -> Path:
     Return value: 
         dbPath : A Path object that points to the db file
     """
+    global DB_PATH
+
     #Finds the myDrive main folder
     mainDir = Path(__file__).parent.parent
     #Finds the myDrive/db directory
@@ -41,13 +43,15 @@ def Initialize_Database() -> Path:
     conn.commit()
     conn.close()
 
+    DB_PATH = dbPath
+
     return dbPath
 #End of Initialize_Database ========================================================================================================================================
 
 
 
 
-def Add_File(dbPath: Path, fileName: str, fileHash: str) -> bool:
+def Add_File(fileName: str, fileHash: str) -> bool:
     """
     Name: Add_File
 
@@ -69,7 +73,7 @@ def Add_File(dbPath: Path, fileName: str, fileHash: str) -> bool:
             False : The file could not be added to the db, either because it was a duplicate
                     or because there was an error
     """
-    conn = sqlite3.connect(dbPath)
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
         c.execute("""INSERT INTO files (fileName, fileHash) 
@@ -91,7 +95,7 @@ def Add_File(dbPath: Path, fileName: str, fileHash: str) -> bool:
 
 
 
-def Check_File_Name_Exists(dbPath: Path, fileName: str) -> bool:
+def Check_File_Name_Exists(fileName: str) -> bool:
     """
     Name: Check_File_Name_Exists
 
@@ -108,7 +112,7 @@ def Check_File_Name_Exists(dbPath: Path, fileName: str) -> bool:
 
             False : The file doesn't already exist, it is new
     """
-    conn = sqlite3.connect(dbPath)
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     try:
@@ -128,3 +132,6 @@ def Check_File_Name_Exists(dbPath: Path, fileName: str) -> bool:
     finally:
         conn.close()
 #End of Check_File_Name_Exists =======================================================================================================================
+
+def GetDBPath():
+    return DB_PATH

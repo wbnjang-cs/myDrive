@@ -7,7 +7,9 @@ from utils import (
     GetSavePath,
     Initialize_Database,
     InitializeConfig,
-    Check_File_Name_Exists
+    Check_File_Name_Exists,
+    CreateDirectory,
+    GetDBPath
 )
 
 #======== Code that runs on startup ==================================================================
@@ -20,22 +22,23 @@ app = FastAPI()
 def create_upload_file(userFiles: list[UploadFile] = File(...)):
     uploadedFiles = []
     failedFiles = []
+    saveDir = GetSavePath()
+    dbPath = GetDBPath()
 
     for file in userFiles:
         fileName = file.filename
     
         #Quick Check if file with same name exists. If it does, don't save file and return
-        if Check_File_Name_Exists(dbPath, fileName):
+        if Check_File_Name_Exists(fileName):
             fileName = fileName + "(File with identical name already exists)"
             failedFiles.append(fileName)
             continue
 
         #File with matching name inside the save directory
-        saveDir = Path(GetSavePath(configPath))
         savePath = saveDir / fileName
 
-        #Saves the file to savePath and hashes the bytes using Sha256
-        if SaveAndHashFile(file, savePath, dbPath):
+        #Check if file successfully saves
+        if SaveAndHashFile(file):
             uploadedFiles.append(fileName)
         else:
             fileName = fileName + "(File with identical content already saved)"
@@ -54,9 +57,14 @@ def create_upload_file(userFiles: list[UploadFile] = File(...)):
 @app.post("/config/setPath")
 def set_save_path (savePathName: str): 
     savePath = Path(savePathName)
-    UpdateSavePath(savePath, configPath)
+    UpdateSavePath(savePath)
 
     return {"Message" : "Path successfully updated"}
 
+@app.post("/config/createsubdirectory")
+def CreateSubDirectory(directoryName: str):
+    CreateDirectory(directoryName)
+
+    return {"Message" : "subdirectory successfully created"}
 
 

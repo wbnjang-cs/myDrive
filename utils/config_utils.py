@@ -4,6 +4,9 @@ import uuid
 from fastapi import HTTPException
 import json
 
+CONFIG_PATH = None
+ID = None
+
 def InitializeConfig() -> Path:
     """
     Name: InitializeConfig
@@ -20,13 +23,17 @@ def InitializeConfig() -> Path:
     Return value:
         configPath: a Path object that points to the config.json file.
      """
+    
+    global CONFIG_PATH
+    global ID
+
     #Finds the myDrive main folder
     mainDir = Path(__file__).parent.parent
     #Finds the myDrive/config directory
     configDir = mainDir / "config"
     #Finds the path to the config file located at myDrive/config/config.json
     configPath = configDir / "config.json"
-
+    CONFIG_PATH = configPath
     #If myDrive/config directory doesn't exist, makes it. If it does exist, continue
     configDir.mkdir(exist_ok=True)
 
@@ -40,17 +47,23 @@ def InitializeConfig() -> Path:
 
         #set the save path to myDrive/default_uploads
         defaultData = {
-            "save path" : str(defaultSavePath)
+            "save path" : str(defaultSavePath),
+            "id" : str(uuid.uuid4())
         }
-
         # Creates the config file with the default save path saved at myDrive/config/config.json
         with open(configPath, 'w') as f:
             json.dump(defaultData, f, indent=4)
+    
+    else:
+        with open(CONFIG_PATH, "r") as configFile:
+            data = json.load(configFile)
+            ID = data["id"]
 
+    
     return configPath
 #End of InitializeConfig()=======================================================================================
 
-def UpdateSavePath(savePath: Path, configPath: Path) ->  None:
+def UpdateSavePath(savePath: Path) ->  None:
     """
     Name: UpdateSavePath
 
@@ -78,18 +91,17 @@ def UpdateSavePath(savePath: Path, configPath: Path) ->  None:
     if not savePath.exists():
         raise HTTPException(status_code=404, detail="That directory does not exist. Try again please.")
 
-    #If configPath doesn't exist
-    if configPath.exists():
+    if CONFIG_PATH.exists():
         try:
             #loads data from config gile
-            with open(configPath, "r") as configFile:
+            with open(CONFIG_PATH, "r") as configFile:
                 data = json.load(configFile)
             
             #update the "save path" value in data
             data["save path"] = str(savePath.resolve())
 
             #overwrite the config file with updated contents
-            with open(configPath, "w") as configFile:
+            with open(CONFIG_PATH, "w") as configFile:
                 json.dump(data, configFile, indent=4)
 
         #If any part of writing to config file fails, raise an error
@@ -103,24 +115,18 @@ def UpdateSavePath(savePath: Path, configPath: Path) ->  None:
     
 
     
-def GetSavePath(configPath: Path) -> Path:
+def GetSavePath() -> Path:
     """
     Name: GetSavePath
 
     Function description:
-
         Will return the save path saved in the config.json folder
                 
-    Assumptions: the inputted configPath parameter correctly points to the config.json file
-
-    Inputs: 
-        configPath: a Path object that points to the config.json file
-
     Return value: 
         savePath: A Path that is the save path saved inside the config.json folder
 
     """
-    with open(configPath, "r") as configFile:
+    with open(CONFIG_PATH, "r") as configFile:
         data = json.load(configFile)
     
     savePath = data["save path"]
@@ -128,4 +134,25 @@ def GetSavePath(configPath: Path) -> Path:
         raise HTTPException(status_code=400, detail="A save directory has not been set yet. Please choose a save directory before trying again.")
 
     return Path(savePath)
+#End of GetSavePath ========================================================================================================================
+
+def GetSavePath() -> Path:
+    """
+    Name: GetID
+
+    Function description:
+        Will return the ID saved in the config.json folder
+        
+    Return value: 
+        currID: The int that is the unique ID of this program
+
+    """
+    with open(CONFIG_PATH, "r") as configFile:
+        data = json.load(configFile)
+    
+    currID = data["id"]
+    if currID == None:
+        raise HTTPException(status_code=400, detail="A save directory has not been set yet. Please choose a save directory before trying again.")
+
+    return currID
 #End of GetSavePath ========================================================================================================================
