@@ -2,12 +2,16 @@ import json
 from pathlib import Path
 import uuid
 from fastapi import HTTPException
-import json
 
-CONFIG_PATH = None
-ID = None
 
-def InitializeConfig() -> Path:
+MAIN_DIR = Path(__file__).parent.parent
+
+CONFIG_DIR = MAIN_DIR / "config"
+CONFIG_DIR.mkdir(exist_ok=True)
+
+CONFIG_PATH = CONFIG_DIR / "config.json"
+
+def InitializeConfig() -> dict:
     """
     Name: InitializeConfig
 
@@ -20,48 +24,39 @@ def InitializeConfig() -> Path:
 
     Inputs: None
 
-    Return value:
-        configPath: a Path object that points to the config.json file.
-     """
-    
-    global CONFIG_PATH
-    global ID
+    Return:
 
-    #Finds the myDrive main folder
-    mainDir = Path(__file__).parent.parent
-    #Finds the myDrive/config directory
-    configDir = mainDir / "config"
-    #Finds the path to the config file located at myDrive/config/config.json
-    configPath = configDir / "config.json"
-    CONFIG_PATH = configPath
-    #If myDrive/config directory doesn't exist, makes it. If it does exist, continue
-    configDir.mkdir(exist_ok=True)
+        data : The dictionary that is the contents of the json file
+     """
 
     #If config file doesn't exist inside myDrive/config directory, make a default config file
-    if not configPath.exists():
+    if not CONFIG_PATH.exists():
         #Find a path to a directory for default uploads at myDrive/default_uploads
-        defaultSavePath = mainDir / "default_uploads"
+        defaultSavePath = MAIN_DIR / "default_uploads"
 
         #Creates myDrive/default_uploads if it doesn't exist
         defaultSavePath.mkdir(exist_ok=True)
 
         #set the save path to myDrive/default_uploads
-        defaultData = {
+        data = {
             "save path" : str(defaultSavePath),
             "id" : str(uuid.uuid4())
         }
         # Creates the config file with the default save path saved at myDrive/config/config.json
-        with open(configPath, 'w') as f:
-            json.dump(defaultData, f, indent=4)
-    
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(data, f, indent=4)
+        return data
+        
     else:
         with open(CONFIG_PATH, "r") as configFile:
             data = json.load(configFile)
-            ID = data["id"]
+            return data
 
-    
-    return configPath
 #End of InitializeConfig()=======================================================================================
+
+_CONFIG_DATA = InitializeConfig()
+
+
 
 def UpdateSavePath(savePath: Path) ->  None:
     """
@@ -76,9 +71,6 @@ def UpdateSavePath(savePath: Path) ->  None:
         
         savePath:   A Path object that points to the directory the user wishes to save their
                     file backups. It is provided by the user.
-        
-        configPath:  A Path object that points to the config.json file
-
     Return value: None
 
     Errors accounted for:
@@ -89,27 +81,25 @@ def UpdateSavePath(savePath: Path) ->  None:
     """
     #If the path the user gave does not exist, raise an error
     if not savePath.exists():
+        print("UpdateSavePath : That directory does not exist. Try again please.")
         raise HTTPException(status_code=404, detail="That directory does not exist. Try again please.")
 
     if CONFIG_PATH.exists():
         try:
-            #loads data from config gile
-            with open(CONFIG_PATH, "r") as configFile:
-                data = json.load(configFile)
-            
-            #update the "save path" value in data
-            data["save path"] = str(savePath.resolve())
+            resolvedPath = str(savePath.resolve())
+            _CONFIG_DATA["save path"] = resolvedPath
 
-            #overwrite the config file with updated contents
-            with open(CONFIG_PATH, "w") as configFile:
-                json.dump(data, configFile, indent=4)
+            with open(CONFIG_PATH, 'w') as f:
+                json.dump(_CONFIG_DATA, f, indent=4)
+            
+            _CONFIG_DATA = InitializeConfig()
 
         #If any part of writing to config file fails, raise an error
         except Exception as e:
-            print(f"failed to save path: {e}")
+            print(f"UpdateSavePath: failed to save path: {e}")
             raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     else:
-        print("Config File can't be found. Please restart app.")
+        print("UpdateSavePath: Config File can't be found. Please restart app.")
         raise HTTPException(status_code=500, detail="Config File can't be found")
 #End of CheckPathAndUpdate =========================================================================================================
     
@@ -126,17 +116,12 @@ def GetSavePath() -> Path:
         savePath: A Path that is the save path saved inside the config.json folder
 
     """
-    with open(CONFIG_PATH, "r") as configFile:
-        data = json.load(configFile)
     
-    savePath = data["save path"]
-    if savePath == None:
-        raise HTTPException(status_code=400, detail="A save directory has not been set yet. Please choose a save directory before trying again.")
 
-    return Path(savePath)
+    return Path(_CONFIG_DATA["save path"])
 #End of GetSavePath ========================================================================================================================
 
-def GetSavePath() -> Path:
+def GetID() -> str:
     """
     Name: GetID
 
@@ -147,12 +132,6 @@ def GetSavePath() -> Path:
         currID: The int that is the unique ID of this program
 
     """
-    with open(CONFIG_PATH, "r") as configFile:
-        data = json.load(configFile)
-    
-    currID = data["id"]
-    if currID == None:
-        raise HTTPException(status_code=400, detail="A save directory has not been set yet. Please choose a save directory before trying again.")
 
-    return currID
+    return _CONFIG_DATA["id"]
 #End of GetSavePath ========================================================================================================================

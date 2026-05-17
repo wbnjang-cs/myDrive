@@ -1,7 +1,7 @@
 from fastapi import UploadFile
 from hashlib import sha256
 from pathlib import Path
-from .db_utils import Add_File, GetDBPath
+from .db_utils import Add_File
 import tempfile
 from .config_utils import GetSavePath
 
@@ -9,7 +9,7 @@ from .config_utils import GetSavePath
 
 
 
-def SaveAndHashFile(file: UploadFile) -> bool:
+def SaveAndHashFile(file: UploadFile, savePath: Path) -> bool:
     """
     Name: SaveAndHashFile
 
@@ -26,8 +26,10 @@ def SaveAndHashFile(file: UploadFile) -> bool:
     Assumptions: No assumptions
 
     Inputs: 
-    file: an UploadFile object of the file the user is trying to upload
-    savePath: a Path object that points to the file inside save directory specified in myDrive/config/config.json
+        file:   an UploadFile object of the file the user is trying to upload
+                savePath: a Path object that points to the file inside save directory specified in myDrive/config/config.json
+        
+        savePath:   Path where the user want's their files saved
 
     Return value:
         True : The file was successfully saved and added to DB
@@ -37,8 +39,7 @@ def SaveAndHashFile(file: UploadFile) -> bool:
     readAmount = 4
     tempName = None
 
-    savePath = GetSavePath() / file.filename
-    dbPath = GetDBPath()
+    savePath = savePath / file.filename
 
     try:
         #Sha256 object that takes in mbs and hashes them
@@ -113,7 +114,7 @@ def CreateDirectory(dirStr: str) -> Path:
     dirPath = Path(dirStr)
     mainSavePath = GetSavePath()
     dirPath = mainSavePath / dirPath
-    dirPath.mkdir(exist_ok=True)
+    dirPath.mkdir(exist_ok=True, parents=True)
 
     return dirPath
     

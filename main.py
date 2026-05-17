@@ -1,29 +1,31 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, Depends
 from pathlib import Path
-from typing import List, Annotated
+from security import Verify_ID
+from typing import Annotated
 from utils import (
     SaveAndHashFile,
     UpdateSavePath,
     GetSavePath,
-    Initialize_Database,
-    InitializeConfig,
     Check_File_Name_Exists,
-    CreateDirectory,
-    GetDBPath
+    CreateDirectory
 )
 
+
+
 #======== Code that runs on startup ==================================================================
-dbPath = Initialize_Database()
-configPath = InitializeConfig()
 app = FastAPI()
 #====================================================================================================================================
 
 @app.post("/uploadfile/")
-def create_upload_file(userFiles: list[UploadFile] = File(...)):
+def create_upload_file(userFiles: list[UploadFile], Authentication: Annotated[str, Depends(Verify_ID)], savePath: str=None):
     uploadedFiles = []
     failedFiles = []
-    saveDir = GetSavePath()
-    dbPath = GetDBPath()
+    mainSavePath = GetSavePath()
+    
+    if savePath is None:
+        savePath = mainSavePath
+    else:
+        savePath = mainSavePath / Path(savePath)
 
     for file in userFiles:
         fileName = file.filename
@@ -34,11 +36,8 @@ def create_upload_file(userFiles: list[UploadFile] = File(...)):
             failedFiles.append(fileName)
             continue
 
-        #File with matching name inside the save directory
-        savePath = saveDir / fileName
-
         #Check if file successfully saves
-        if SaveAndHashFile(file):
+        if SaveAndHashFile(file, savePath):
             uploadedFiles.append(fileName)
         else:
             fileName = fileName + "(File with identical content already saved)"
